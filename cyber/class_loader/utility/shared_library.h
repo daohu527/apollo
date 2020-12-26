@@ -40,7 +40,7 @@ class SharedLibrary {
   void *handle_;
   std::string filename_;
 
-  std::mutex mutex_;
+  static std::mutex mutex_;
 };
 
 }
