@@ -213,19 +213,19 @@ bool LoadLibrary(const std::string& library_path, ClassLoader* loader) {
     try {
       SetCurActiveClassLoader(loader);
       SetCurLoadingLibraryName(library_path);
-      poco_library = PocoLibraryPtr(new Poco::SharedLibrary(library_path));
-    } catch (const Poco::LibraryLoadException& e) {
+      poco_library = PocoLibraryPtr(new SharedLibrary(library_path));
+    } catch (const LibraryLoadException& e) {
       SetCurLoadingLibraryName("");
       SetCurActiveClassLoader(nullptr);
-      AERROR << "poco LibraryLoadException: " << e.message();
-    } catch (const Poco::LibraryAlreadyLoadedException& e) {
+      AERROR << "poco LibraryLoadException: " << e.what();
+    } catch (const LibraryAlreadyLoadedException& e) {
       SetCurLoadingLibraryName("");
       SetCurActiveClassLoader(nullptr);
-      AERROR << "poco LibraryAlreadyLoadedException: " << e.message();
+      AERROR << "poco LibraryAlreadyLoadedException: " << e.what();
     } catch (const Poco::NotFoundException& e) {
       SetCurLoadingLibraryName("");
       SetCurActiveClassLoader(nullptr);
-      AERROR << "poco NotFoundException: " << e.message();
+      AERROR << "poco NotFoundException: " << e.what();
     }
 
     SetCurLoadingLibraryName("");
@@ -265,7 +265,7 @@ void UnloadLibrary(const std::string& library_path, ClassLoader* loader) {
       DestroyClassFactoryObjectsOfLibrary(library_path, loader);
 
       if (GetAllClassFactoryObjectsOfLibrary(library_path).empty()) {
-        itr->second->unload();
+        itr->second->Unload();
         itr = opened_libraries.erase(itr);
       } else {
         AWARN << "ClassFactory Objects still remain in memory,meaning other "

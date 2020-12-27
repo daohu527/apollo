@@ -19,7 +19,6 @@ cc_library(
     deps = [
         "//cyber:init",
         "//cyber/common:log",
-        "@poco//:PocoFoundation",
     ],
 )
 

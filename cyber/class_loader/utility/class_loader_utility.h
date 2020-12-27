@@ -28,8 +28,7 @@
 #include <utility>
 #include <vector>
 
-#include "Poco/SharedLibrary.h"
-
+#include "cyber/class_loader/utility/shared_library.h"
 #include "cyber/class_loader/utility/class_factory.h"
 #include "cyber/common/log.h"
 
@@ -44,7 +43,7 @@ class ClassLoader;
 
 namespace utility {
 
-using PocoLibraryPtr = std::shared_ptr<Poco::SharedLibrary>;
+using PocoLibraryPtr = std::shared_ptr<SharedLibrary>;
 using ClassClassFactoryMap =
     std::map<std::string, utility::AbstractClassFactoryBase*>;
 using BaseToClassFactoryMapMap = std::map<std::string, ClassClassFactoryMap>;

@@ -4,6 +4,8 @@
 #include <string>
 #include <mutex>
 
+#include "cyber/class_loader/utility/exception.h"
+
 namespace apollo {
 namespace cyber {
 namespace class_loader {
@@ -13,25 +15,25 @@ class SharedLibrary {
  public:
   SharedLibrary();
 
-  SharedLibrary(const std::string &filename);
+  SharedLibrary(const std::string& filename);
 
-  SharedLibrary(const std::string &filename, int flag);
+  SharedLibrary(const std::string& filename, int flag);
 
   virtual ~SharedLibrary();
   
-  void Load(const std::string &filename);
+  void Load(const std::string& filename);
 
-  void Load(const std::string &filename, int flag);
+  void Load(const std::string& filename, int flag);
 
-  void Unload();
+  bool Unload();
 
-  bool IsLoaded() const;
+  bool IsLoaded();
 
-  bool HasSymbol(const std::string &name);
+  bool HasSymbol(const std::string& name);
 
-  void* GetSymbol(const std::string &name);
+  void* GetSymbol(const std::string& name);
 
-  const std::string& GetPath() const { return filename_};
+  inline const std::string& GetPath() const { return filename_; };
 
   SharedLibrary(const SharedLibrary&) = delete;
   SharedLibrary& operator=(const SharedLibrary&) = delete;
@@ -40,10 +42,10 @@ class SharedLibrary {
   void *handle_;
   std::string filename_;
 
-  static std::mutex mutex_;
+  std::mutex mutex_;
 };
 
-}
-}
-}
-}
+}  // utility
+}  // class_loader
+}  // cyber
+}  // apollo
