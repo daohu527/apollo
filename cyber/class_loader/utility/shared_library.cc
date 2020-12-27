@@ -13,22 +13,26 @@ SharedLibrary::SharedLibrary(const std::string& filename) {
   Load(filename, 0);
 }
 
-SharedLibrary::SharedLibrary(const std::string& filename, int flag) {
-  Load(filename, flag);
+SharedLibrary::SharedLibrary(const std::string& filename, int flags) {
+  Load(filename, flags);
 }
 
 void SharedLibrary::Load(const std::string& filename) {
   Load(filename, 0);
 }
 
-void SharedLibrary::Load(const std::string& filename, int flag) {
-  // Todo(zero):
-  if (IsLoaded()) throw LibraryAlreadyLoadedException(filename);
-
+void SharedLibrary::Load(const std::string& filename, int flags) {
   std::lock_guard<std::mutex> lock(mutex_);
-  handle_ = dlopen(filename.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+  if (handle_) throw LibraryAlreadyLoadedException(filename);
+
+  int real_flag = RTLD_LAZY;
+  if (flags & SHLIB_LOCAL) {
+    real_flag |= SHLIB_LOCAL;
+  } else {
+    real_flag |= SHLIB_GLOBAL;
+  }
+  handle_ = dlopen(filename.c_str(), real_flag);
   if (!handle_) {
-    // Todo(zero): 
     const char* err = dlerror();
     throw LibraryLoadException(err ? std::string(err) : filename);
   }
@@ -36,14 +40,12 @@ void SharedLibrary::Load(const std::string& filename, int flag) {
   filename_ = filename;
 }
 
-bool SharedLibrary::Unload() {
-  if (!IsLoaded()) return false;
-  
+void SharedLibrary::Unload() {
   std::lock_guard<std::mutex> lock(mutex_);
-  int count = dlclose(handle_);
-  handle_ = nullptr;
-  
-  return !count;
+  if (handle_) {
+    dlclose(handle_);
+    handle_ = nullptr;
+  }
 }
 
 bool SharedLibrary::IsLoaded() {
@@ -56,10 +58,15 @@ bool SharedLibrary::HasSymbol(const std::string& name) {
 }
 
 void* SharedLibrary::GetSymbol(const std::string& name) {
-  if (!IsLoaded()) return nullptr;
-
   std::lock_guard<std::mutex> lock(mutex_);
-  return dlsym(handle_, name.c_str());
+  if (!handle_) return nullptr;
+  
+  void* result = dlsym(handle_, name.c_str());
+  if (!result) {
+    throw NotFoundException(name);
+  }
+
+  return result;
 }
 
 SharedLibrary::~SharedLibrary() {

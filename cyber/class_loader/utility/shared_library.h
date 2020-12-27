@@ -13,19 +13,24 @@ namespace utility {
 
 class SharedLibrary {
  public:
+  enum Flags {
+    SHLIB_GLOBAL = 1,
+    SHLIB_LOCAL = 2,
+  };
+
   SharedLibrary();
 
   SharedLibrary(const std::string& filename);
 
-  SharedLibrary(const std::string& filename, int flag);
+  SharedLibrary(const std::string& filename, int flags);
 
   virtual ~SharedLibrary();
   
   void Load(const std::string& filename);
 
-  void Load(const std::string& filename, int flag);
+  void Load(const std::string& filename, int flags);
 
-  bool Unload();
+  void Unload();
 
   bool IsLoaded();
 
@@ -39,7 +44,7 @@ class SharedLibrary {
   SharedLibrary& operator=(const SharedLibrary&) = delete;
 
  private:
-  void *handle_;
+  void* handle_;
   std::string filename_;
 
   std::mutex mutex_;
@@ -49,3 +54,5 @@ class SharedLibrary {
 }  // class_loader
 }  // cyber
 }  // apollo
+
+#endif  // CYBER_CLASS_LOADER_UTILITY_SHARED_LIBRARY_H_
