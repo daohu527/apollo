@@ -12,6 +12,7 @@ cc_library(
         "utility/shared_library.h",
         "utility/exception.h",
     ],
+    linkopts = ['-ldl'],
 )
 
 cc_library(
@@ -57,7 +58,6 @@ cc_test(
         "//cyber/proto:unit_test_cc_proto",
         "@com_google_googletest//:gtest",
     ],
-    linkopts = ['-lm', '-ldl'],
 )
 
 cpplint()
