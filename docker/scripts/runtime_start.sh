@@ -21,10 +21,11 @@ source "${CURR_DIR}/docker_base.sh"
 DOCKER_REPO="apolloauto/apollo"
 RUNTIME_CONTAINER="apollo_runtime_${USER}"
 RUNTIME_INSIDE="in-runtime-docker"
+RUNTIME_STANDALONE="false"
 
 TARGET_ARCH="$(uname -m)"
 
-VERSION_X86_64="dev-x86_64-18.04-20210315_2158"
+VERSION_X86_64="dev-x86_64-18.04-20210517_1712"
 USER_VERSION_OPT=
 
 FAST_MODE="no"
@@ -59,6 +60,7 @@ OPTIONS:
     -f, --fast             Fast mode without pulling all map volumes.
     -g, --geo <us|cn|none> Pull docker image from geolocation specific registry mirror.
     -l, --local            Use local docker image.
+    -s, --standalone       Run standalone container with all volumes and apollo itself included.
     -t, --tag <TAG>        Specify docker image with tag <TAG> to start.
     --shm-size <bytes>     Size of /dev/shm . Passed directly to "docker run"
 EOF
@@ -99,6 +101,10 @@ function parse_arguments() {
 
             -l | --local)
                 USE_LOCAL_IMAGE=1
+                ;;
+
+            -s | --standalone)
+                RUNTIME_STANDALONE="true"
                 ;;
 
             --shm-size)
@@ -163,7 +169,8 @@ function setup_devices_and_mount_local_volumes() {
     source "${APOLLO_ROOT_DIR}/scripts/apollo_base.sh"
     setup_device
 
-    local volumes="-v ${APOLLO_ROOT_DIR}:/apollo"
+    local volumes=""
+    $RUNTIME_STANDALONE || volumes="-v ${APOLLO_ROOT_DIR}:/apollo"
 
     local os_release="$(lsb_release -rs)"
     case "${os_release}" in
@@ -309,6 +316,8 @@ function main() {
         exit 1
     fi
 
+    $RUNTIME_STANDALONE && RUNTIME_CONTAINER="apollo_runtime_standalone_$USER"
+
     info "Check and remove existing Apollo Runtime container ..."
     remove_container_if_exists "${RUNTIME_CONTAINER}"
 
@@ -319,34 +328,41 @@ function main() {
     local local_volumes=
     setup_devices_and_mount_local_volumes local_volumes
 
-    mount_map_volumes
-    mount_other_volumes
+    $RUNTIME_STANDALONE || mount_map_volumes
+    $RUNTIME_STANDALONE || mount_other_volumes
 
     info "Starting docker container \"${RUNTIME_CONTAINER}\" ..."
 
     local local_host="$(hostname)"
     local display="${DISPLAY:-:0}"
-    local user="${USER}"
-    local uid="$(id -u)"
-    local group="$(id -g -n)"
-    local gid="$(id -g)"
+    local docker_user="${USER}"
+    local docker_uid="$(id -u)"
+    local docker_group="$(id -g -n)"
+    local docker_gid="$(id -g)"
 
+    if $RUNTIME_STANDALONE; then
+        [ -n "${RUNTIME_STANDALONE_USER}" ] && docker_user="${RUNTIME_STANDALONE_USER}"
+        [ -n "${RUNTIME_STANDALONE_UID}" ] && docker_uid="${RUNTIME_STANDALONE_UID}"
+        [ -n "${RUNTIME_STANDALONE_GROUP}" ] && docker_group="${RUNTIME_STANDALONE_GROUP}"
+        [ -n "${RUNTIME_STANDALONE_GID}" ] && docker_gid="${RUNTIME_STANDALONE_GID}"
+    fi
     set -x
     ${DOCKER_RUN_CMD} -itd \
         --privileged \
         --name "${RUNTIME_CONTAINER}" \
         -e DISPLAY="${display}" \
-        -e DOCKER_USER="${user}" \
-        -e USER="${user}" \
-        -e DOCKER_USER_ID="${uid}" \
-        -e DOCKER_GRP="${group}" \
-        -e DOCKER_GRP_ID="${gid}" \
+        -e USER="${USER}" \
+        -e DOCKER_USER="${docker_user}" \
+        -e DOCKER_USER_ID="${docker_uid}" \
+        -e DOCKER_GRP="${docker_group}" \
+        -e DOCKER_GRP_ID="${docker_gid}" \
         -e DOCKER_IMG="${RUNTIME_IMAGE}" \
         -e USE_GPU_HOST="${USE_GPU_HOST}" \
         -e NVIDIA_VISIBLE_DEVICES=all \
         -e NVIDIA_DRIVER_CAPABILITIES=compute,video,graphics,utility \
         ${MAP_VOLUMES_CONF} \
         ${OTHER_VOLUMES_CONF} \
+        ${LOCAL_VOLUMES_CONF} \
         ${local_volumes} \
         --net host \
         -w /apollo \
@@ -369,7 +385,8 @@ function main() {
 
     ok "Congratulations! You have successfully finished setting up Apollo Runtime Environment."
     ok "To login into the newly created ${RUNTIME_CONTAINER} container, please run the following command:"
-    ok "  bash docker/scripts/runtime_into.sh"
+    $RUNTIME_STANDALONE || ok "  bash docker/scripts/runtime_into.sh"
+    $RUNTIME_STANDALONE && ok "  bash docker/scripts/runtime_into_standalone.sh"
     ok "Enjoy!"
 }
 

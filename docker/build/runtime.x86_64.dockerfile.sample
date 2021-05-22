@@ -1,14 +1,14 @@
-ARG DEV_IMAGE_IN=apolloauto/apollo:dev-x86_64-18.04-latest
+ARG DEV_IMAGE_IN=apolloauto/apollo:dev-x86_64-18.04-20210517_1712
 
 ARG BASE_IMAGE=nvidia/cuda:11.1-runtime-ubuntu18.04
 
 FROM ${DEV_IMAGE_IN} as devel
 FROM ${BASE_IMAGE}
 
-ARG GEOLOC
-ARG CUDA_LITE
-ARG CUDNN_VERSION
-ARG TENSORRT_VERSION
+ARG GEOLOC=us
+ARG CUDA_LITE=11.1
+ARG CUDNN_VERSION=8.0.4.30
+ARG TENSORRT_VERSION=7.2.1
 
 ENV APOLLO_DIST=stable
 ENV DEBIAN_FRONTEND=noninteractive
@@ -54,9 +54,11 @@ RUN ln -s -f /bin/true /usr/bin/chfn \
 RUN bash /opt/apollo/installers/install_mkl.sh
 #RUN bash /opt/apollo/installers/install_node.sh
 
-# TODO(storypku): Qt-5.12.9 and NodeJS
+# TODO(storypku): NodeJS
 COPY --from=devel /usr/local/fast-rtps  /usr/local/fast-rtps
 COPY --from=devel /usr/local/libtorch_gpu /usr/local/libtorch_gpu
+COPY --from=devel /usr/local/qt5/lib /usr/local/qt5/lib
+COPY --from=devel /etc/ld.so.conf.d/qt.conf /etc/ld.so.conf.d/qt.conf
 COPY --from=devel /opt/apollo/pkgs /opt/apollo/pkgs
 COPY --from=devel /opt/apollo/sysroot/lib /opt/apollo/sysroot/lib
 #COPY --from=devel /opt/apollo/sysroot/bin /opt/apollo/sysroot/bin

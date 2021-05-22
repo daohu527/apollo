@@ -18,7 +18,7 @@
 # Fail on first error.
 set -e
 
-MY_MODE="${1:-build}"
+MY_MODE="${1:-download}"
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 . ./installer_base.sh
@@ -26,12 +26,13 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 ARCH="$(uname -m)"
 
 DEST_DIR="${PKGS_DIR}/adv_plat"
-[[ -d ${DEST_DIR} ]] || mkdir -p ${DEST_DIR}
+[[ -d ${DEST_DIR} ]] && rm -rf ${DEST_DIR}
+mkdir -p ${DEST_DIR}
 
 if [[ "${MY_MODE}" == "download" ]]; then
     if [[ "${ARCH}" == "x86_64" ]]; then
-        PKG_NAME="adv_plat-3.0-x86_64.tar.gz"
-        CHECKSUM="647197f3f222a26dbc5c94a3e5143872b8c1359387bfb439e9f3dcd5064601e0"
+        PKG_NAME="adv_plat-3.0.1-x86_64.tar.gz"
+        CHECKSUM="3853ff381f8cb6e1681c73e7b4fbc004e950b83db890e3fa0bab9bf6685114ac"
         DOWNLOAD_LINK="https://apollo-system.cdn.bcebos.com/archive/6.0/${PKG_NAME}"
         download_if_not_cached "${PKG_NAME}" "${CHECKSUM}" "${DOWNLOAD_LINK}"
 
