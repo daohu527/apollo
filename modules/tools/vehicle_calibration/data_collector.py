@@ -226,7 +226,7 @@ def main():
                 if os.path.exists(data_collector.outfile):
                     os.remove(data_collector.outfile)
                 else:
-                    print('File does not exist: %s' % date_collector.outfile)
+                    print('File does not exist: %s' % data_collector.outfile)
         elif len(cmd) == 3:
             data_collector.run(cmd)
 
