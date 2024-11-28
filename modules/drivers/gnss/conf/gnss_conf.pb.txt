@@ -1,6 +1,6 @@
 data {
     # format optional: NOVATEL_BINARY, HUACE_TEXT, ASENSING_BINARY, BROADGNSS_TEXT
-    format: NOVATEL_BINARY
+    format: ENBROAD_BINARY
 
     # protocol optional: serial, tcp, udp, ntrip, can_card_parameter
     serial {
