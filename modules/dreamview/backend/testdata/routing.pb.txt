@@ -1,0 +1,22 @@
+header {
+  module_name: "routing"
+  timestamp_sec: 1234.5
+  sequence_num: 1
+}
+command_id: 9
+lane_follow_command {
+  road {
+    passage {
+      segment {
+        id: "1_-1"
+        start_s: 0.000000000
+        end_s: 16.752481892
+      }
+      can_exit: 1
+      change_lane_type: FORWARD
+    }
+  }
+  measurement {
+    distance: 16.752481892
+  }
+}
