@@ -1,4 +1,4 @@
-sensor_name: "velodyne64"
+sensor_name: "lidar_top"
 lidar_query_tf_offset: 0
 output_channel_name: "/perception/lidar/pointcloud_preprocess"
 plugin_param {

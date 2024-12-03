@@ -542,6 +542,7 @@ void RawStream::RtkSpin() {
 }
 
 void RawStream::PublishRtkData(const size_t length) {
+  AERROR << "PublishRtkData";
   std::shared_ptr<RawData> rtk_msg = std::make_shared<RawData>();
   CHECK_NOTNULL(rtk_msg);
   rtk_msg->set_data(reinterpret_cast<const char *>(buffer_rtk_), length);
@@ -549,22 +550,81 @@ void RawStream::PublishRtkData(const size_t length) {
   rtcm_parser_ptr_->ParseRtcmData(rtk_msg->data());
 }
 
+uint8_t RecBuf_[4096] = {0};
+uint8_t SynBuf_[4096] = {0};
+unsigned int iWriteIndex = 0;
+unsigned int iReadIndex = 0;
+unsigned int normalizeIndex(int i) {
+  while (i >= 4096) {
+    i = i - 4096;
+  }
+  while (i < 0) {
+    i = i + 4096;
+  }
+  return i;
+}
 void RawStream::PushGpgga(const size_t length) {
+  // char *gpgga = nullptr;
+  size_t i = 0, j = 0;
+  uint8_t headflag, tailflag;
+  uint8_t headlen = 6;
+  unsigned int tailindex = 0;
+  unsigned int headpos = 0;
   if (!in_rtk_stream_) {
     return;
   }
 
-  char *gpgga = strstr(reinterpret_cast<char *>(buffer_), "$GPGGA");
-  if (gpgga) {
-    char *p = strchr(gpgga, '*');
-    if (p) {
-      p += 5;
-      if (size_t(p - reinterpret_cast<char *>(buffer_)) <= length) {
-        AINFO_EVERY(5) << "Push gpgga.";
-        in_rtk_stream_->write(reinterpret_cast<uint8_t *>(gpgga),
-                              reinterpret_cast<uint8_t *>(p) - buffer_);
+  // buffer_缓存到RecBuf_中
+  for (i = 0; i < length; i++) {
+    RecBuf_[iWriteIndex] = buffer_[i];
+    iWriteIndex++;
+    if (iWriteIndex >= 4096) {
+      iWriteIndex = iWriteIndex - 4096;
+    }
+  }
+
+  headflag = 0;
+  tailflag = 0;
+  headpos = 0;
+  // chekc gga from iWriteIndex to iReadIndex
+  for (i = 0; i < normalizeIndex(iWriteIndex - iReadIndex); i++) {
+    if (RecBuf_[normalizeIndex(iReadIndex + i)] == '$' &&
+        RecBuf_[normalizeIndex(iReadIndex + i + 1)] == 'G' &&
+        RecBuf_[normalizeIndex(iReadIndex + i + 2)] == 'N' &&
+        RecBuf_[normalizeIndex(iReadIndex + i + 3)] == 'G' &&
+        RecBuf_[normalizeIndex(iReadIndex + i + 4)] == 'G' &&
+        RecBuf_[normalizeIndex(iReadIndex + i + 5)] == 'A') {
+      headflag = 1;
+      headpos = normalizeIndex(iReadIndex + i);
+      for (j = 0; j < normalizeIndex(iWriteIndex - iReadIndex); j++) {
+        if (RecBuf_[normalizeIndex(iReadIndex + j)] == '\r' &&
+            RecBuf_[normalizeIndex(iReadIndex + j + 1)] == '\n') {
+          tailflag = 1;
+          tailindex = normalizeIndex(iReadIndex + j + 1);
+        }
       }
     }
+  }
+
+  // unread frameheader
+  if (0 == headflag) {
+    iReadIndex = normalizeIndex(iWriteIndex - headlen);
+    // read framehead but unread frametail
+  } else if (1 == headflag && 0 == tailflag) {
+    iReadIndex = headpos;
+  } else if (1 == headflag && 1 == tailflag) {
+    memset(SynBuf_, 0, sizeof(SynBuf_));
+    for (i = 0; i <= normalizeIndex(tailindex - headpos); i++) {
+      SynBuf_[i] = RecBuf_[normalizeIndex(headpos + i)];
+    }
+    AERROR << SynBuf_;
+    in_rtk_stream_->write(reinterpret_cast<uint8_t *>(SynBuf_),
+                          normalizeIndex(tailindex - headpos) + 1);
+    // clear data to frametail
+    for (i = 0; i <= normalizeIndex(tailindex - iReadIndex); i++) {
+      RecBuf_[normalizeIndex(iReadIndex + i)] = 0;
+    }
+    iReadIndex = tailindex;
   }
 }
 

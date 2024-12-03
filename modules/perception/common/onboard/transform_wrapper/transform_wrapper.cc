@@ -294,11 +294,14 @@ bool TransformWrapper::QueryTrans(double timestamp, StampedTransform* trans,
       // soft trigger and the latency is within the tolerance range
       query_time = apollo::cyber::Time(0);
     } else {
+     query_time = cyber::Time(0);
+     /*
       AERROR << "Can not find transform. " << FORMAT_TIMESTAMP(timestamp)
              << " frame_id: " << frame_id
              << " child_frame_id: " << child_frame_id
              << " Error info: " << err_string;
       return false;
+    */  
     }
   }
 
